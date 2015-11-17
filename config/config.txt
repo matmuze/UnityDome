@@ -1,1 +1,1 @@
-{"NodeId":1,"Port":7777,"IpAdress":"127.0.0.1","ScreenWidth":800,"ScreenHeight":600,"FullScreen":false}
+{"NodeId":1,"Port":7777,"IpAdress":"127.0.0.1","ScreenWidth":800,"ScreenHeight":600,"FullScreen":false,"IsServer":false,"BeginOnStartUp":false}

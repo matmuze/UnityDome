@@ -51,6 +51,8 @@ public class AppSettings
     public int ScreenWidth;
     public int ScreenHeight;
     public bool FullScreen;
+    public bool IsServer;
+    public bool BeginOnStartUp;
 }
 
 //Product product = new Product();
@@ -84,6 +86,10 @@ public class NetworkManager : MonoBehaviour
         var json = File.ReadAllText(configFile);
         var appSettings = JsonConvert.DeserializeObject<AppSettings>(json);
 
+        // Reserialze and write to disk in case changes have been made in the class
+        json = JsonConvert.SerializeObject(appSettings);
+        File.WriteAllText(configFile, json);
+
         Debug.Log("Start Lobby");
         Application.runInBackground = true;
         Screen.SetResolution(appSettings.ScreenWidth, appSettings.ScreenHeight, appSettings.FullScreen);
@@ -92,6 +98,12 @@ public class NetworkManager : MonoBehaviour
         ClientPortField.text = appSettings.Port.ToString();
         ClientNodeIdField.text = appSettings.NodeId.ToString();
         ClientIpAddressField.text = appSettings.IpAdress;
+
+        if (appSettings.BeginOnStartUp)
+        {
+            if(appSettings.IsServer) StartServer();
+            else StartClient();
+        }
     }
 
     private int currentScreenWidth;
