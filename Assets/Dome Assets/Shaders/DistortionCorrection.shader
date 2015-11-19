@@ -72,9 +72,9 @@ Shader "Custom/DistortionCorrection"
 				sample float2 uv : TEXCOORD0;
 			};
 			
-			int _AntiAliasing;
-			sampler2D _SourceTex;
+			uniform sampler2D _SourceTex;
 			uniform float4x4 _OrthoMatrix;
+			uniform float4 _SourceTex_TexelSize;
 
 			v2f vert(appdata v)
 			{
@@ -84,11 +84,9 @@ Shader "Custom/DistortionCorrection"
 				return o;
 			}
 
-			half4 frag(v2f i, uint iSample : SV_SAMPLEINDEX) : SV_Target
+			half4 frag(v2f i) : SV_Target
 			{	
-				//half4 c = float4(1, 0, 0, 0);			
-				//half4 c = float4(i.uv, 0, 0);
-				if(_AntiAliasing != 0) i.uv.y = 1 - i.uv.y;			
+				if (_SourceTex_TexelSize.y < 0) i.uv.y = 1 - i.uv.y;			
 				half4 c = tex2D(_SourceTex, (i.uv));
 				return c;
 			}

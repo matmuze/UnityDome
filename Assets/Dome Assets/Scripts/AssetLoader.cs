@@ -133,81 +133,37 @@ public class AssetLoader : MonoBehaviour
     [MenuItem("Debug/Bake Stencil Masks")]
     public static void BakeStencilMasks()
     {
-        var opacityMask = MyUtility.LoadOpacityMask(1);
-        var material = new Material(Resources.Load<Shader>("BakeStencilMask"));
-        material.hideFlags = HideFlags.HideAndDontSave;
-
-        var temp = RenderTexture.GetTemporary(opacityMask.width, opacityMask.height, 24, RenderTextureFormat.ARGB32);
-
-        var stencilMask = new RenderTexture(opacityMask.width, opacityMask.height, 24, RenderTextureFormat.ARGB32);
-        stencilMask.enableRandomWrite = true;
-        stencilMask.Create();
-
         for (int i = 1; i <= 6; i++)
         {
-            opacityMask = MyUtility.LoadOpacityMask(i);
-            var correctionMesh = MyUtility.LoadCorrectionMesh(i);
-            
-            Graphics.SetRenderTarget(stencilMask);
-            GL.Clear(true, true, Color.black);
-            
-            // Bind the read/write occlusion buffer to the shader
-            // After this draw call the occlusion buffer will be filled with ones if an instance occluded and occludee, zero otherwise
-            Graphics.SetRandomWriteTarget(1, stencilMask);
-            MyUtility.DummyBlit();   // Dunny why yet, but without this I cannot write to the buffer from the shader, go figure
+            var stencilMaskTexture = MyUtility.BakeStencilMask(i);
 
-            Graphics.SetRenderTarget(temp);
-            GL.Clear(true, true, Color.black);
-
-            // Do correction
-            
-            material.SetInt("_Width", opacityMask.width);
-            material.SetInt("_Height", opacityMask.height);
-            material.SetTexture("_OpacityMaskTex", opacityMask);
-            material.SetMatrix("_OrthoMatrix", MyUtility.CorrectD3DProjectionMatrix(Matrix4x4.Ortho(0, 1, 0, 1, 0, 1)));
-            material.SetPass(0);
-            Graphics.DrawMeshNow(correctionMesh, Matrix4x4.identity);
-            Graphics.ClearRandomWriteTargets();
-
-            RenderTexture.active = stencilMask;
-            var stencilMaskTexture = new Texture2D(opacityMask.width, opacityMask.height, TextureFormat.ARGB32, false);
-            stencilMaskTexture.ReadPixels(new Rect(0, 0, opacityMask.width, opacityMask.height), 0, 0);
-            stencilMaskTexture.Apply();
-            RenderTexture.active = null;
-
-            var path = "Assets/StencilMask"+i+".asset";
+            var path = "Assets/Dome Assets/Resources/Stencil Masks/StencilMask" + i + ".asset";
             AssetDatabase.CreateAsset(stencilMaskTexture, path);
-            
-            path = Application.dataPath +"/Debug Stencil Masks/" + i + "/StencilMask" + i + ".png";
+
+            path = Application.dataPath + "/../Debug Stencil Masks/" + i + "/StencilMask" + i + ".png";
             File.WriteAllBytes(path, stencilMaskTexture.EncodeToPNG());
         }
-
-        RenderTexture.ReleaseTemporary(temp);
-        stencilMask.Release();
-        DestroyImmediate(material);
-
-
     }
 
-    [MenuItem("Debug/Save Config File")]
-    public static void SaveConfigFile()
-    {
-        var appSettings = new AppSettings();
-        appSettings.Port = 1;
-        appSettings.IpAdress = "hello world";
-        appSettings.NodeId = 2;
-        appSettings.ScreenHeight = 100;
-        appSettings.ScreenWidth = 100;
-        appSettings.FullScreen = false;
+    //[MenuItem("Debug/Save Config File")]
+    //public static void SaveConfigFile()
+    //{
+    //    var appSettings = new AppSettings();
+    //    appSettings.Port = 1;
+    //    appSettings.IpAdress = "hello world";
+    //    appSettings.NodeId = 2;
+    //    appSettings.ScreenHeight = 100;
+    //    appSettings.ScreenWidth = 100;
+    //    appSettings.FullScreen = false;
 
-        var json = JsonConvert.SerializeObject(appSettings);
-        var configFile = MyUtility.ConfigPath + "config.txt";
-        File.WriteAllText(configFile, json);
+    //    var json = JsonConvert.SerializeObject(appSettings);
+    //    var configFile = MyUtility.ConfigPath + "config.txt";
+    //    File.WriteAllText(configFile, json);
 
-        //var configFile = MyUtility.ConfigPath + "default_config.txt";
-        //var jsonCfg = File.ReadAllText(configFile);
-        //Newtonsoft.Json.JsonConvert.DeserializeObject<AppSettings>(jsonCfg);
-    }
+    //    //var configFile = MyUtility.ConfigPath + "default_config.txt";
+    //    //var jsonCfg = File.ReadAllText(configFile);
+    //    //Newtonsoft.Json.JsonConvert.DeserializeObject<AppSettings>(jsonCfg);
+    //}
 
 [MenuItem("Debug/Load Frustum Mesh")]
     private static void LoadFrustumMesh()
@@ -253,29 +209,29 @@ public class AssetLoader : MonoBehaviour
         for (int i = 1; i <= 6; i++)
         {
             var texture = MyUtility.LoadOpacityMask(i);
-            var path = "Assets/Resources/Opacity Masks/OpacityMask" + i + ".asset";
+            var path = "Assets/Dome Assets/Resources/Opacity Masks/OpacityMask" + i + ".asset";
             AssetDatabase.CreateAsset(texture, path);
         }
     }
 
-    [MenuItem("Debug/Load Distortion Meshes")]
-    private static void LoadDistortionMeshes()
+    [MenuItem("Debug/Load Correction Meshes")]
+    private static void LoadCorrectionMeshes()
     {
         for (int i = 1; i <= 6; i++)
         {
             var mesh = MyUtility.LoadCorrectionMesh(i);
-            var path = "Assets/Resources/Correction Meshes/CorrectionMesh" + i + ".asset";
+            var path = "Assets/Dome Assets/Resources/Correction Meshes/CorrectionMesh" + i + ".asset";
             AssetDatabase.CreateAsset(mesh, path);
         }
     }
 
-    [MenuItem("Debug/Load Distortion Meshes2")]
-    private static void LoadDistortionMeshes2()
+    [MenuItem("Debug/Load Correction Meshes2")]
+    private static void LoadCorrectionMeshes2()
     {
         for (int i = 1; i <= 6; i++)
         {
             var mesh = MyUtility.LoadDistortionMesh2(i);
-            var path = "Assets/Resources/Correction Meshes/CorrectionMesh_dbg_" + i + ".asset";
+            var path = "Assets/Dome Assets/Resources/Correction Meshes/CorrectionMesh_dbg_" + i + ".asset";
             AssetDatabase.CreateAsset(mesh, path);
         }
     }

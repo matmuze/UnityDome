@@ -116,15 +116,11 @@ public class Client : MonoBehaviour
         Camera.main.transform.rotation = rotation;
         Camera.main.projectionMatrix = projection;
         
-        //var meshPath = "Correction Meshes/CorrectionMesh" + _nodeId;
-        //var mesh = Resources.Load<Mesh>(meshPath);
-
-        //var maskPath = "Opacity Masks/OpacityMask" + _nodeId;
-        //var mask = Resources.Load<Texture2D>(maskPath);
-
-        var mesh = MyUtility.LoadCorrectionMesh(_nodeId);
         var mask = MyUtility.LoadOpacityMask(_nodeId);
+        var mesh = MyUtility.LoadCorrectionMesh(_nodeId);
+        var stencilMask = MyUtility.BakeStencilMask(_nodeId);
 
+        Camera.main.gameObject.GetComponent<InitDepthBuffer>().StencilMaskTexture = stencilMask;
         Camera.main.gameObject.GetComponent<CameraCorrection>().CorrectionMesh = mesh;
         Camera.main.gameObject.GetComponent<CameraCorrection>().OpacityMask = mask;
         Camera.main.gameObject.GetComponent<CameraCorrection>().enabled = true;

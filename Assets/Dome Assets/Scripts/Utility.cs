@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Xml;
+using Object = UnityEngine.Object;
 
 public static class ViewPlaneCorners
 {
@@ -137,7 +138,7 @@ public class MyUtility
     //    return frustrumPoints;
     //}
 
-    public static string ConfigPath = Application.dataPath + "/../config/";
+    public static string ConfigPath = Application.dataPath + "/../Config/";
 
     public static T StructFromBytes<T>(byte[] source) where T : new()
     {
@@ -493,6 +494,51 @@ public class MyUtility
         maskTexture.Apply();
 
         return maskTexture;
+    }
+
+    public static Texture2D BakeStencilMask(int nodeId)
+    {
+        var opacityMask = MyUtility.LoadOpacityMask(nodeId);
+        var correctionMesh = MyUtility.LoadCorrectionMesh(nodeId);
+
+        var material = new Material(Resources.Load<Shader>("BakeStencilMask"));
+        material.hideFlags = HideFlags.HideAndDontSave;
+        
+        var stencilMask = new RenderTexture(opacityMask.width, opacityMask.height, 24, RenderTextureFormat.ARGB32);
+        stencilMask.enableRandomWrite = true;
+        stencilMask.Create();
+        
+        Graphics.SetRenderTarget(stencilMask);
+        GL.Clear(true, true, Color.black);
+        
+        var temp = RenderTexture.GetTemporary(opacityMask.width, opacityMask.height, 24, RenderTextureFormat.ARGB32);
+        Graphics.SetRenderTarget(temp);
+        GL.Clear(true, true, Color.black);
+
+        Graphics.SetRandomWriteTarget(1, stencilMask);
+        MyUtility.DummyBlit();   // Dunny why yet, but without this I cannot write to the buffer from the shader, go figure
+
+        // Draw correction mesh
+        material.SetInt("_Width", opacityMask.width);
+        material.SetInt("_Height", opacityMask.height);
+        material.SetTexture("_OpacityMaskTex", opacityMask);
+        material.SetMatrix("_OrthoMatrix", MyUtility.CorrectD3DProjectionMatrix(Matrix4x4.Ortho(0, 1, 0, 1, 0, 1)));
+        material.SetPass(0);
+        Graphics.DrawMeshNow(correctionMesh, Matrix4x4.identity);
+        Graphics.ClearRandomWriteTargets();
+
+        // Copy render texture to texture 2D
+        RenderTexture.active = stencilMask;
+        var stencilMaskTexture = new Texture2D(opacityMask.width, opacityMask.height, TextureFormat.ARGB32, false);
+        stencilMaskTexture.ReadPixels(new Rect(0, 0, opacityMask.width, opacityMask.height), 0, 0);
+        stencilMaskTexture.Apply();
+        RenderTexture.active = null;
+        
+        RenderTexture.ReleaseTemporary(temp);
+        stencilMask.Release();
+        Object.DestroyImmediate(material);
+
+        return stencilMaskTexture;
     }
 
     public static void DummyBlit()

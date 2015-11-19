@@ -62,6 +62,7 @@ public class CameraController : MonoBehaviour
 
     void Update()
     {
+        _camera = Camera.main;
         deltaTime = Time.realtimeSinceStartup - lastUpdateTime;
         lastUpdateTime = Time.realtimeSinceStartup;
 

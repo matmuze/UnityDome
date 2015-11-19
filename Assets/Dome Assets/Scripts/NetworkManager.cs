@@ -119,17 +119,7 @@ public class NetworkManager : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.G))
         {
             var resolution = Screen.currentResolution;
-
-            if (Screen.width == resolution.width && Screen.height == resolution.height)
-            {
-                Screen.SetResolution(currentScreenWidth, currentScreenHeight, Screen.fullScreen);
-            }
-            else
-            {
-                currentScreenWidth = Screen.width;
-                currentScreenHeight = Screen.height;
-                Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreen);
-            }
+            Screen.SetResolution(resolution.width, resolution.height, Screen.fullScreen);
         }
     }
 
@@ -162,6 +152,7 @@ public class NetworkManager : MonoBehaviour
         CameraControler.enabled = true; // Enable camera controls if server
         NetworkCurrentState = MyNetworkState.Server;
         Camera.main.GetComponent<CameraCorrection>().enabled = false;
+        Camera.main.GetComponent<InitDepthBuffer>().enabled = false;
     }
 
     public void StartClient()
@@ -184,6 +175,7 @@ public class NetworkManager : MonoBehaviour
         Destroy(gameObject.GetComponent<Client>());
         CameraControler.enabled = false;
         Camera.main.GetComponent<CameraCorrection>().enabled = false;
+        Camera.main.GetComponent<InitDepthBuffer>().enabled = false;
     }
 
     public void EndServer()

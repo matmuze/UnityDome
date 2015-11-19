@@ -3,7 +3,7 @@ using System.Collections;
 using UnityEngine.Rendering;
 
 [ExecuteInEditMode]
-public class InitStencilBuffer : MonoBehaviour
+public class InitDepthBuffer : MonoBehaviour
 {
     CommandBuffer _commands;
 

@@ -41,8 +41,9 @@
 			
 			sampler2D _MainTex;
 
-			void frag (v2f i, out float depth : SV_Depth) 
+			void frag (v2f i, out float4 color : SV_Target, out float depth : SV_Depth) 
 			{
+				color = float4(0,0,0,1);
 				float maskValue = tex2D(_MainTex, i.uv);
 				if(maskValue == 0) depth = 0;
 				else discard;

@@ -13,9 +13,6 @@ public class CameraCorrection : MonoBehaviour
 
     private void OnRenderImage(RenderTexture src, RenderTexture dest)
     {
-        //Debug.Log("Correction");
-        //Debug.Log(Time.frameCount);
-
         var temp = RenderTexture.GetTemporary(src.width, src.height, 24, RenderTextureFormat.ARGB32);
         Graphics.SetRenderTarget(temp);
         GL.Clear(true, true, Color.black);
@@ -23,7 +20,6 @@ public class CameraCorrection : MonoBehaviour
         var orthoMatrix = MyUtility.CorrectD3DProjectionMatrix(Matrix4x4.Ortho(0, 1, 0, 1, 0, 1));
 
         // Do distortion 
-        CorrectionMaterial.SetInt("_AntiAliasing", QualitySettings.antiAliasing);
         CorrectionMaterial.SetTexture("_SourceTex", src);
         CorrectionMaterial.SetMatrix("_OrthoMatrix", orthoMatrix);
         CorrectionMaterial.SetPass(0);
