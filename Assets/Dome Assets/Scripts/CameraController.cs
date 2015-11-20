@@ -7,7 +7,6 @@ using UnityEditor;
 [ExecuteInEditMode]
 public class CameraController : MonoBehaviour
 {
-
     public float DefaultDistance = 5.0f;
 
     public float AcrBallRotationSpeed = 0.1f;
@@ -20,8 +19,15 @@ public class CameraController : MonoBehaviour
     public float AngleY;
     public float AngleX;
 
-    public bool FollowTarget;
+    [Range(0.01f,1)]
+    public float PositionSmoothing;
+
+    [Range(0.01f, 1)]
+    public float RotationSmoothing;
+    
     public Vector3 TargetPosition;
+
+    public bool FollowTarget;
     public GameObject TargetGameObject;
 
     /*****/
@@ -33,12 +39,8 @@ public class CameraController : MonoBehaviour
 
     /*****/
 
-    private Camera _camera;
-
     void OnEnable()
     {
-        _camera = Camera.main;
-
 #if UNITY_EDITOR
         if (!EditorApplication.isPlaying)
         {
@@ -62,7 +64,6 @@ public class CameraController : MonoBehaviour
 
     void Update()
     {
-        _camera = Camera.main;
         deltaTime = Time.realtimeSinceStartup - lastUpdateTime;
         lastUpdateTime = Time.realtimeSinceStartup;
 
@@ -70,84 +71,74 @@ public class CameraController : MonoBehaviour
         {
             TargetPosition = TargetGameObject.transform.position;
         }
-
-        _camera.transform.rotation = Quaternion.Euler(AngleX, AngleY, 0.0f);
-        _camera.transform.position = TargetPosition - _camera.transform.forward * Distance;
+        
+        DoFpsRotation(AngleX, AngleY);
 
         if (forward)
         {
-            TargetPosition += _camera.transform.forward * TranslationSpeed * deltaTime;
-            _camera.transform.position += _camera.transform.forward * TranslationSpeed * deltaTime;
+            TargetPosition += transform.forward * TranslationSpeed * deltaTime;
+            transform.position += transform.forward * TranslationSpeed * deltaTime;
         }
 
         if (backward)
         {
-            TargetPosition -= _camera.transform.forward * TranslationSpeed * deltaTime;
-            _camera.transform.position -= _camera.transform.forward * TranslationSpeed * deltaTime;
+            TargetPosition -= transform.forward * TranslationSpeed * deltaTime;
+            transform.position -= transform.forward * TranslationSpeed * deltaTime;
         }
 
         if (right)
         {
-            TargetPosition += _camera.transform.right * TranslationSpeed * deltaTime;
-            _camera.transform.position += _camera.transform.right * TranslationSpeed * deltaTime;
+            TargetPosition += transform.right * TranslationSpeed * deltaTime;
+            transform.position += transform.right * TranslationSpeed * deltaTime;
         }
 
         if (left)
         {
-            TargetPosition -= _camera.transform.right * TranslationSpeed * deltaTime;
-            _camera.transform.position -= _camera.transform.right * TranslationSpeed * deltaTime;
+            TargetPosition -= transform.right * TranslationSpeed * deltaTime;
+            transform.position -= transform.right * TranslationSpeed * deltaTime;
         }
 
-        _camera.transform.position = _camera.transform.position;
-        _camera.transform.rotation = _camera.transform.rotation;
+        Camera.main.transform.position = Vector3.Lerp(Camera.main.transform.position, transform.position, PositionSmoothing);
+        Camera.main.transform.rotation = Quaternion.Lerp(Camera.main.transform.rotation, transform.rotation, RotationSmoothing);
     }
 
-    void DoArcBallRotation()
+    void DoArcBallRotation(float angleX, float angleY)
     {
-        AngleY += Event.current.delta.x * AcrBallRotationSpeed;
-        AngleX += Event.current.delta.y * AcrBallRotationSpeed;
-
-        var rotation = Quaternion.Euler(AngleX, AngleY, 0.0f);
-        var position = TargetPosition + rotation * Vector3.back * Distance;
-
-        _camera.transform.rotation = rotation;
-        _camera.transform.position = position;
+        transform.rotation = Quaternion.Euler(angleX, angleY, 0.0f);
+        transform.position = TargetPosition + transform.rotation * Vector3.back * Distance;
     }
 
-    void DoFpsRotation()
+    void DoFpsRotation(float angleX, float angleY)
     {
-        AngleY += Event.current.delta.x * FpsRotationSpeed;
-        AngleX += Event.current.delta.y * FpsRotationSpeed;
-
-        var rotation = Quaternion.Euler(AngleX, AngleY, 0.0f);
-
-        _camera.transform.rotation = rotation;
-        TargetPosition = _camera.transform.position + _camera.transform.forward * Distance;
+        transform.position = TargetPosition - transform.forward * Distance;
+        transform.rotation = Quaternion.Euler(angleX, angleY, 0.0f);
+        TargetPosition = transform.position + transform.forward * Distance;
     }
 
-    void DoPanning()
+    void DoPanning(float DeltaX, float DeltaY)
     {
-        TargetPosition += _camera.transform.up * Event.current.delta.y * PannigSpeed;
-        _camera.transform.position += _camera.transform.up * Event.current.delta.y * PannigSpeed;
+        TargetPosition += transform.up * DeltaY * PannigSpeed;
+        transform.position += transform.up * DeltaY * PannigSpeed;
 
-        TargetPosition -= _camera.transform.right * Event.current.delta.x * PannigSpeed;
-        _camera.transform.position -= _camera.transform.right * Event.current.delta.x * PannigSpeed;
+        TargetPosition -= transform.right * DeltaX * PannigSpeed;
+        transform.position -= transform.right * DeltaX * PannigSpeed;
     }
     
-    void DoScrolling()
+    void DoScrolling(float DeltaY)
     {
         Distance += Event.current.delta.y * ScrollingSpeed;
-        _camera.transform.position = TargetPosition - _camera.transform.forward * Distance;
+        transform.position = TargetPosition - transform.forward * Distance;
 
         if (Distance < 0)
         {
-            TargetPosition = _camera.transform.position + _camera.transform.forward * DefaultDistance;
-            Distance = Vector3.Distance(TargetPosition, _camera.transform.position);
+            TargetPosition = transform.position + transform.forward * DefaultDistance;
+            Distance = Vector3.Distance(TargetPosition, transform.position);
         }
     }
     
     private void OnGUI()
     {
+
 #if UNITY_EDITOR
         if (Event.current.type == EventType.Layout || Event.current.type == EventType.Repaint)
         {
@@ -157,19 +148,23 @@ public class CameraController : MonoBehaviour
 
         if (Event.current.alt && Event.current.type == EventType.mouseDrag && Event.current.button == 0)
         {
-            DoArcBallRotation();
+            AngleY += Event.current.delta.x * AcrBallRotationSpeed;
+            AngleX += Event.current.delta.y * AcrBallRotationSpeed;
+
+            DoArcBallRotation(AngleX, AngleY);
         }
         else if (Event.current.type == EventType.mouseDrag && Event.current.button == 1)
         {
-            DoFpsRotation();
+            AngleY += Event.current.delta.x * FpsRotationSpeed;
+            AngleX += Event.current.delta.y * FpsRotationSpeed;
         }
         else if (Event.current.type == EventType.mouseDrag && Event.current.button == 2)
         {
-            DoPanning();
+            DoPanning(Event.current.delta.x * PannigSpeed, Event.current.delta.y * PannigSpeed);
         }
         else if (Event.current.type == EventType.ScrollWheel)
         {
-            DoScrolling();
+            DoScrolling(Event.current.delta.y * ScrollingSpeed);
         }
 
         if (Event.current.keyCode == KeyCode.F)
@@ -180,14 +175,14 @@ public class CameraController : MonoBehaviour
             }
 
             Distance = DefaultDistance;
-            _camera.transform.position = TargetPosition - _camera.transform.forward * Distance;
+            transform.position = TargetPosition - transform.forward * Distance;
         }
 
         if (Event.current.keyCode == KeyCode.R)
         {
             Distance = DefaultDistance;
             TargetPosition = Vector3.zero;
-            _camera.transform.position = TargetPosition - _camera.transform.forward * Distance;
+            transform.position = TargetPosition - transform.forward * Distance;
         }
 
         if (Event.current.keyCode == KeyCode.W)

@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿
+
+using UnityEngine;
 using UnityEngine.Networking;
 
 public class Server : MonoBehaviour
@@ -6,7 +8,7 @@ public class Server : MonoBehaviour
     public const int NumConnectionMax = 6;
 
     private int[] _nodeSlots = new int[NumConnectionMax];
-    private Quaternion _initLookAtRotation;
+    private Quaternion _serverOffsetRotation;
 
     // Send update message every frame
     public void Update()
@@ -21,7 +23,7 @@ public class Server : MonoBehaviour
         var msg = new UpdateCameraMessage
         {
             ServerCameraPosition = Camera.main.transform.position,
-            ServerCameraRotation = Camera.main.transform.rotation * Quaternion.Inverse(_initLookAtRotation)
+            ServerCameraRotation = Camera.main.transform.rotation * Quaternion.Inverse(_serverOffsetRotation)
         };
 
         // Use unreliable channel
@@ -46,7 +48,7 @@ public class Server : MonoBehaviour
     //*****//
 
     // Create a server and listen on a port
-    public void Setup(int port)
+    public void Setup(int port, float angleX, float angleY)
     {
         Debug.Log("Setup server on port: " + port);
         
@@ -57,7 +59,7 @@ public class Server : MonoBehaviour
 
         for (var i = 0; i < NumConnectionMax; i++) _nodeSlots[i] = -1;
         
-        _initLookAtRotation = Quaternion.AngleAxis(-90, new Vector3(1, 0, 0));
+        _serverOffsetRotation = Quaternion.Euler(angleX, angleY, 0);
     }
 
     public void OnInitClientNode(NetworkMessage netMsg)

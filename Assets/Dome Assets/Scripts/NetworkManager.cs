@@ -54,6 +54,8 @@ public class AppSettings
     public bool FullScreen;
     public bool IsServer;
     public bool BeginOnStartUp;
+    public float MasterRotationOffsetX;
+    public float MasterRotationOffsetY;
 }
 
 //Product product = new Product();
@@ -78,6 +80,7 @@ public class NetworkManager : MonoBehaviour
     //*****//
 
     public CameraController CameraControler;
+    public static AppSettings AppSettings = new AppSettings();
 
     void Start()
     {
@@ -90,24 +93,24 @@ public class NetworkManager : MonoBehaviour
         }
 
         var json = File.ReadAllText(configFile);
-        var appSettings = JsonConvert.DeserializeObject<AppSettings>(json);
+        AppSettings = JsonConvert.DeserializeObject<AppSettings>(json);
 
         // Reserialze and write to disk in case changes have been made in the class
-        json = JsonConvert.SerializeObject(appSettings);
+        json = JsonConvert.SerializeObject(AppSettings);
         File.WriteAllText(configFile, json);
 
         Debug.Log("Start Lobby");
         Application.runInBackground = true;
-        Screen.SetResolution(appSettings.ScreenWidth, appSettings.ScreenHeight, appSettings.FullScreen);
+        Screen.SetResolution(AppSettings.ScreenWidth, AppSettings.ScreenHeight, AppSettings.FullScreen);
         
-        ServerPortField.text = appSettings.Port.ToString(); 
-        ClientPortField.text = appSettings.Port.ToString();
-        ClientNodeIdField.text = appSettings.NodeId.ToString();
-        ClientIpAddressField.text = appSettings.IpAdress;
+        ServerPortField.text = AppSettings.Port.ToString(); 
+        ClientPortField.text = AppSettings.Port.ToString();
+        ClientNodeIdField.text = AppSettings.NodeId.ToString();
+        ClientIpAddressField.text = AppSettings.IpAdress;
 
-        if (appSettings.BeginOnStartUp)
+        if (AppSettings.BeginOnStartUp)
         {
-            if(appSettings.IsServer) StartServer();
+            if(AppSettings.IsServer) StartServer();
             else StartClient();
         }
     }
@@ -151,13 +154,10 @@ public class NetworkManager : MonoBehaviour
 
     public void StartServer()
     {
-        
         var port = string.IsNullOrEmpty(ServerPortField.text) ? DefaultPort : int.Parse(ServerPortField.text);
-
-        gameObject.AddComponent<Server>().Setup(port);
+        gameObject.AddComponent<Server>().Setup(port, AppSettings.MasterRotationOffsetX, AppSettings.MasterRotationOffsetY);
 
         HideCanvas();
-        Cursor.visible = true;
         CameraControler.enabled = true; // Enable camera controls if server
         NetworkCurrentState = MyNetworkState.Server;
         Camera.main.GetComponent<CameraCorrection>().enabled = false;
@@ -169,7 +169,6 @@ public class NetworkManager : MonoBehaviour
         var ipAddress = string.IsNullOrEmpty(ClientIpAddressField.text) ? Localhost : ClientIpAddressField.text;
         var port = string.IsNullOrEmpty(ClientPortField.text) ? DefaultPort : int.Parse(ClientPortField.text);
         var nodeId = string.IsNullOrEmpty(ClientNodeIdField.text) ? 1 : int.Parse(ClientNodeIdField.text);
-
         gameObject.AddComponent<Client>().Setup(ipAddress, port, nodeId);
 
         HideCanvas();
@@ -183,6 +182,8 @@ public class NetworkManager : MonoBehaviour
         ShowCanvas();
         NetworkCurrentState = MyNetworkState.Lobby;
         Destroy(gameObject.GetComponent<Client>());
+
+        Cursor.visible = true;
         CameraControler.enabled = false;
         Camera.main.GetComponent<CameraCorrection>().enabled = false;
         Camera.main.GetComponent<InitDepthBuffer>().enabled = false;
