@@ -40,7 +40,8 @@ public enum MyNetworkState
 {
     Lobby = 0,
     Server = 1,
-    Client = 2
+    Client = 2,
+    InitError = 3
 };
 
 public class AppSettings
@@ -81,7 +82,12 @@ public class NetworkManager : MonoBehaviour
     void Start()
     {
         var configFile = MyUtility.ConfigPath + "config.txt";
-        if(!File.Exists(configFile)) throw new Exception("Config file not found");
+        if (!File.Exists(configFile))
+        {
+            CameraControler.enabled = false;
+            NetworkCurrentState = MyNetworkState.InitError;
+            throw new Exception("Config file not found");
+        }
 
         var json = File.ReadAllText(configFile);
         var appSettings = JsonConvert.DeserializeObject<AppSettings>(json);
@@ -105,9 +111,6 @@ public class NetworkManager : MonoBehaviour
             else StartClient();
         }
     }
-
-    private int currentScreenWidth;
-    private int currentScreenHeight;
 
     void Update()
     {
@@ -137,6 +140,10 @@ public class NetworkManager : MonoBehaviour
             case MyNetworkState.Client:
                 GUI.Label(new Rect(10, Screen.height - 20, 100, 20), "Client", style);
                 break;
+            case MyNetworkState.InitError:
+                style.fontSize = 30;
+                GUI.Label(new Rect(Screen.width * 0.5f -200, Screen.height * 0.5f -50, 100, 20), "Init Error: Config file not found", style);
+                break;
             default:
                 throw new ArgumentOutOfRangeException();
         }
@@ -144,11 +151,13 @@ public class NetworkManager : MonoBehaviour
 
     public void StartServer()
     {
+        
         var port = string.IsNullOrEmpty(ServerPortField.text) ? DefaultPort : int.Parse(ServerPortField.text);
 
         gameObject.AddComponent<Server>().Setup(port);
 
         HideCanvas();
+        Cursor.visible = true;
         CameraControler.enabled = true; // Enable camera controls if server
         NetworkCurrentState = MyNetworkState.Server;
         Camera.main.GetComponent<CameraCorrection>().enabled = false;
@@ -164,6 +173,7 @@ public class NetworkManager : MonoBehaviour
         gameObject.AddComponent<Client>().Setup(ipAddress, port, nodeId);
 
         HideCanvas();
+        Cursor.visible = false;
         CameraControler.enabled = false; // Disable camera controls if server
         NetworkCurrentState = MyNetworkState.Client;
     }

@@ -16,13 +16,8 @@ public static class ViewPlaneCorners
 
 public struct SCISSTexturedVertex
 {
-    float x, y, z;
-    float tx, ty, tz;
-
-    //public SCISSTexturedVertex()
-    //{
-    //    //x = y = z = tx = ty = tz = 0;
-    //}
+    public float x, y, z;
+    public float tx, ty, tz;
 
     public Vector3 UV()
     {
@@ -62,8 +57,6 @@ public struct SCISSViewData
 
 public class MyUtility
 {
-
-
     //public static void LoadConfigData()
     //{
     //    StreamReader reader = new StreamReader(Application.dataPath + "/../config/dome_alpha.xml", System.Text.Encoding.GetEncoding("utf-8"));
@@ -228,6 +221,10 @@ public class MyUtility
             var fileVersion = (int)b.ReadChar();
             var mappingType = b.ReadUInt32();
 
+            Debug.Log("sgc file info:");
+            Debug.Log("fileVersion: " + fileVersion);
+            Debug.Log("mappingType: " + mappingType);
+             
             var viewData = MyUtility.StructFromBytes<SCISSViewData>(b.ReadBytes(Marshal.SizeOf(typeof(SCISSViewData))));
             //Debug.Log(viewData.ToString());
 
@@ -339,7 +336,7 @@ public class MyUtility
         return m;
     }
 
-    public static Mesh LoadDistortionMesh2(int nodeId)
+    public static Mesh LoadCorrectionMesh(int nodeId)
     {
         var meshPath = Application.dataPath + "/../config/channel" + nodeId + "_planar.sgc";
 
@@ -353,8 +350,12 @@ public class MyUtility
             throw new Exception("File not valid");
         }
 
-        Debug.Log("File version: " + (int) b.ReadChar());
-        Debug.Log("Mapping type: " + b.ReadUInt32());
+        var fileVersion = (int)b.ReadChar();
+        var mappingType = b.ReadUInt32();
+
+        Debug.Log("sgc file info:");
+        Debug.Log("fileVersion: " + fileVersion);
+        Debug.Log("mappingType: " + mappingType);
 
         var viewData = MyUtility.StructFromBytes<SCISSViewData>(b.ReadBytes(Marshal.SizeOf(typeof (SCISSViewData))));
         Debug.Log(viewData.ToString());
@@ -380,86 +381,11 @@ public class MyUtility
 
         foreach (var vertex in verticesArray)
         {
-            vertices.Add(vertex.Position()); //) - new Vector3(.5f,.5f,.5f));
+            var v = new Vector3(vertex.x, 1-vertex.y, vertex.z);
+            vertices.Add(v); 
         }
 
         var meshSize = (int) Mathf.Sqrt(vertices.Count);
-        for (var r = 0; r < meshSize - 1; r++)
-        {
-            for (var c = 0; c < meshSize - 1; c++)
-            {
-                indices.Add(r + c*meshSize);
-                indices.Add(r + c*meshSize + 1);
-                indices.Add(r + c*meshSize + meshSize);
-
-                indices.Add(r + c*meshSize + 1);
-                indices.Add(r + c*meshSize + meshSize + 1);
-                indices.Add(r + c*meshSize + meshSize);
-            }
-        }
-
-        var mesh = new Mesh();
-        mesh.SetVertices(vertices);
-        mesh.SetUVs(0, uvs);
-        mesh.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
-
-        b.Close();
-
-        return mesh;
-    }
-
-    public static Mesh LoadCorrectionMesh(int nodeId)
-    {
-        var meshPath = Application.dataPath + "/../config/correctionmesh" + nodeId + ".txt";
-
-        if (!File.Exists(meshPath))
-        {
-            throw new Exception("File not found");
-        }
-
-        var vertices = new List<Vector3>();
-        var uvs = new List<Vector3>();
-        var indices = new List<int>();
-
-        var sr = new StreamReader(meshPath);
-        
-        string line;
-
-        while ((line = sr.ReadLine()) != null)
-        {
-            if (line == "HEADER_END")
-            {
-                var numVertices = int.Parse(sr.ReadLine());
-                //Debug.Log(numVertices);
-
-                for (var j = 0; j < numVertices; j++)
-                {
-                    var vertex = new Vector3(float.Parse(sr.ReadLine()), float.Parse(sr.ReadLine()), 0);
-                    vertex = vertex * 0.5f + new Vector3(0.5f, 0.5f, 0);
-                    var uv = new Vector3(float.Parse(sr.ReadLine()), float.Parse(sr.ReadLine()), 0);
-
-                    vertices.Add(vertex);
-                    uvs.Add(uv);
-
-                    //Debug.Log(vertices.Last());
-                    //Debug.Log(uvs.Last());
-                }
-
-                //var numIndices = int.Parse(sr.ReadLine());
-                //Debug.Log(numIndices);
-
-                //for (int i = 0; i < numIndices; i++)
-                //{
-                //    var index = int.Parse(sr.ReadLine());
-                //    indices.Add(index);
-
-                //    int a = 0;
-                //    //Debug.Log(indices.Last());
-                //}
-            }
-        }
-
-        var meshSize = (int)Mathf.Sqrt(vertices.Count);
         for (var r = 0; r < meshSize - 1; r++)
         {
             for (var c = 0; c < meshSize - 1; c++)
@@ -479,8 +405,69 @@ public class MyUtility
         mesh.SetUVs(0, uvs);
         mesh.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
 
+        b.Close();
+
         return mesh;
     }
+
+    //public static Mesh LoadCorrectionMesh2(int nodeId)
+    //{
+    //    var meshPath = Application.dataPath + "/../config/correctionmesh" + nodeId + ".txt";
+
+    //    if (!File.Exists(meshPath))
+    //    {
+    //        throw new Exception("File not found");
+    //    }
+
+    //    var vertices = new List<Vector3>();
+    //    var uvs = new List<Vector3>();
+    //    var indices = new List<int>();
+
+    //    var sr = new StreamReader(meshPath);
+        
+    //    string line;
+
+    //    while ((line = sr.ReadLine()) != null)
+    //    {
+    //        if (line == "HEADER_END")
+    //        {
+    //            var numVertices = int.Parse(sr.ReadLine());
+    //            //Debug.Log(numVertices);
+
+    //            for (var j = 0; j < numVertices; j++)
+    //            {
+    //                var vertex = new Vector3(float.Parse(sr.ReadLine()), float.Parse(sr.ReadLine()), 0);
+    //                vertex = vertex * 0.5f + new Vector3(0.5f, 0.5f, 0);
+    //                var uv = new Vector3(float.Parse(sr.ReadLine()), float.Parse(sr.ReadLine()), 0);
+
+    //                vertices.Add(vertex);
+    //                uvs.Add(uv);
+    //            }
+    //        }
+    //    }
+
+    //    var meshSize = (int)Mathf.Sqrt(vertices.Count);
+    //    for (var r = 0; r < meshSize - 1; r++)
+    //    {
+    //        for (var c = 0; c < meshSize - 1; c++)
+    //        {
+    //            indices.Add(r + c * meshSize);
+    //            indices.Add(r + c * meshSize + meshSize);
+    //            indices.Add(r + c * meshSize + 1);
+
+    //            indices.Add(r + c * meshSize + 1);
+    //            indices.Add(r + c * meshSize + meshSize);
+    //            indices.Add(r + c * meshSize + meshSize + 1);
+    //        }
+    //    }
+
+    //    var mesh = new Mesh();
+    //    mesh.SetVertices(vertices);
+    //    mesh.SetUVs(0, uvs);
+    //    mesh.SetIndices(indices.ToArray(), MeshTopology.Triangles, 0);
+
+    //    return mesh;
+    //}
 
     public static Texture2D LoadOpacityMask(int nodeId)
     {
